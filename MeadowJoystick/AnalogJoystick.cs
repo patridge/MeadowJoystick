@@ -213,10 +213,10 @@ namespace Meadow2.Foundation.Sensors.Hid
         /// <returns></returns>
         protected DigitalJoystickPosition TranslateAnalogPositionToDigital()
         {
-            Console.WriteLine("Translate analog to digital");
 
             var h = Position?.Horizontal;
             var v = Position?.Vertical;
+            Console.WriteLine($"Translate analog to digital: {h},{v} with calibration {Calibration.HorizontalCenter},{Calibration.VerticalCenter}");
 
             if (h > (Calibration.HorizontalCenter + Calibration.DeadZone).Volts)
             {

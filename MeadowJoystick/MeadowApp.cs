@@ -23,16 +23,20 @@ namespace MeadowApp
         public MeadowApp()
         {
             Console.WriteLine("ctor");
-            Initialize();
+            var init = Initialize();
             Console.WriteLine("Continue after init");
-            StartGameLoop();
+            init.ContinueWith(_ =>
+            {
+                // Keep from starting gampe loop until everything in Initialize is done.
+                StartGameLoop();
+            });
         }
 
         const int maxX = 8;
         const int maxY = 36;
         Point currentLocation = new Point(0, 0);
 
-        void Initialize()
+        Task Initialize()
         {
             Console.WriteLine("Initialize hardware...");
 
@@ -52,7 +56,7 @@ namespace MeadowApp
                 Device.CreateAnalogInputPort(Device.Pins.A01, 1, 10),
                 null, false);
             var centerJoystick = joystick.SetCenterPosition();
-            centerJoystick.ContinueWith(_ =>
+            var configureUpdates = centerJoystick.ContinueWith(_ =>
             {
                 // Trying not to tie in to the sensor data until centering is completed, since fire-and-forget seems unsafe there.
                 Console.WriteLine("Done centering...");
@@ -61,6 +65,7 @@ namespace MeadowApp
                 Console.WriteLine("Done subscribing...");
             });
             Console.WriteLine("Done initialize...");
+            return configureUpdates;
         }
 
         private void Joystick_Updated(object sender, IChangeResult<JoystickPosition> e)
@@ -147,6 +152,7 @@ namespace MeadowApp
             //var pos = await joystick.Position.GetPosition(); // Old...doesn't work anymore.
             //var pos = await joystick.Read(); // Returns a JoystickPosition, which doesn't work with DigitalJoystickPosition.
             //Console.WriteLine($"pos: {pos.Horizontal}, {pos.Vertical}");
+            // TODO: Figure out how to get calibration done, since `TranslateAnalogPositionToDigital` uses that data under the hood (and it is wrong by default for my analog joystick).
             var pos = joystick.DigitalPosition;
             Console.WriteLine($"pos: {pos}");
             ////if (pos == AnalogJoystick.DigitalJoystickPosition.Left)
