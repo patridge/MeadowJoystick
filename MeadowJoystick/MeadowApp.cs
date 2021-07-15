@@ -22,7 +22,9 @@ namespace MeadowApp
 
         public MeadowApp()
         {
+            Console.WriteLine("ctor");
             Initialize();
+            Console.WriteLine("Continue after init");
             StartGameLoop();
         }
 
@@ -44,18 +46,33 @@ namespace MeadowApp
             graphics = new GraphicsLibrary(display);
             graphics.CurrentFont = new Font4x8();
             graphics.Rotation = GraphicsLibrary.RotationType._180Degrees;
-            joystick = new AnalogJoystick(Device, Device.Pins.A00, Device.Pins.A01, null, true);
-            joystick.Updated += Joystick_Updated;
-            //joystick.StartUpdating(TimeSpan.FromMilliseconds(20));
+            //joystick = new AnalogJoystick(Device, Device.Pins.A00, Device.Pins.A01, null, true);
+            joystick = new AnalogJoystick(
+                Device.CreateAnalogInputPort(Device.Pins.A00, 1, 10),
+                Device.CreateAnalogInputPort(Device.Pins.A01, 1, 10),
+                null, false);
+            var centerJoystick = joystick.SetCenterPosition();
+            centerJoystick.ContinueWith(_ =>
+            {
+                // Trying not to tie in to the sensor data until centering is completed, since fire-and-forget seems unsafe there.
+                Console.WriteLine("Done centering...");
+                joystick.Updated += Joystick_Updated;
+                joystick.StartUpdating(TimeSpan.FromMilliseconds(20));
+                Console.WriteLine("Done subscribing...");
+            });
+            Console.WriteLine("Done initialize...");
         }
 
         private void Joystick_Updated(object sender, IChangeResult<JoystickPosition> e)
         {
+            // This is currently able to log if I do `joystick.Updated` and `joystick.StartUpdating`.
+            //Console.WriteLine($"pos: {e.New.Horizontal}, {e.New.Vertical}");
+
             // Set currentLocation according to joystick, clamped by maxX,maxY
 
             //var pos = await joystick.Position.GetPosition(); // Old...doesn't work anymore.
             //var pos = await joystick.Read(); // Returns a JoystickPosition, which doesn't work with DigitalJoystickPosition.
-            Console.WriteLine($"pos: {e.New.Horizontal}, {e.New.Vertical}");
+            //Console.WriteLine($"pos: {e.New.Horizontal}, {e.New.Vertical}");
             //Console.WriteLine($"pos: {pos.Horizontal}, {pos.Vertical}");
             //var pos = joystick.DigitalPosition;
             //if (pos == AnalogJoystick.DigitalJoystickPosition.Left)
@@ -109,6 +126,7 @@ namespace MeadowApp
         int tick = 0;
         void StartGameLoop()
         {
+            Console.WriteLine("Game loop starting");
             while (true)
             {
                 tick++;
@@ -129,8 +147,8 @@ namespace MeadowApp
             //var pos = await joystick.Position.GetPosition(); // Old...doesn't work anymore.
             //var pos = await joystick.Read(); // Returns a JoystickPosition, which doesn't work with DigitalJoystickPosition.
             //Console.WriteLine($"pos: {pos.Horizontal}, {pos.Vertical}");
-            ////Console.WriteLine($"pos: {pos.Horizontal}, {pos.Vertical}");
-            ////var pos = joystick.DigitalPosition;
+            var pos = joystick.DigitalPosition;
+            Console.WriteLine($"pos: {pos}");
             ////if (pos == AnalogJoystick.DigitalJoystickPosition.Left)
             //if (pos == DigitalJoystickPosition.Left)
             //{
